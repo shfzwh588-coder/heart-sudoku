@@ -1,30 +1,49 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "heart-sudoku-best";
-  const MAX_MISTAKES = 3;
-  const START_HINTS = 3;
+  const SAVE_KEY = "heart-sudoku-level-saves-v1";
+  const PROGRESS_KEY = "heart-sudoku-level-progress-v1";
+  const CHINESE_NUMBERS = ["一", "二", "三", "四", "五"];
 
-  const PUZZLES = [
+  const DIFFICULTIES = [
     {
-      name: "月光高阶 01",
-      puzzle: "000260701680070090190004500820100040004602900050003028009300074040050036703018000",
+      id: "easy",
+      label: "轻松",
+      hints: 4,
+      maxMistakes: 4,
+      levels: [
+        "034078002072190300090042060859761023426000091710020006901530004287419000040086070",
+        "400309800030008007950724306820437160001006402340000050089600570073090080060805290",
+        "905002007400000130010070020801920746690840053040750000038000594000400038004008710",
+        "004070910002105008008342500809700003000053000000004006901507000007019605045086100",
+        "007009005600100000050020010800430000701000032340002750009040071573090004004800200",
+      ],
     },
     {
-      name: "莓果高阶 02",
-      puzzle: "005300000800000020070010500400005300010070006003200080060500009004000030000009700",
+      id: "normal",
+      label: "进阶",
+      hints: 3,
+      maxMistakes: 3,
+      levels: [
+        "007009000002108900000020006025037000000500000046910050080643570500200004004070203",
+        "900000400400000030300570820051003740000000000203050081000060500020005030060098710",
+        "000008010600090000090040560850061000000803090010900800001000280007010035005200000",
+        "007300800600050007000024306000000009091000030040000050200043570003090600100800000",
+        "000030000070009030016070000800900740600800000000006901008200004020405630000000700",
+      ],
     },
     {
-      name: "星糖高阶 03",
-      puzzle: "100007090030020008009600500005300900010080002600004000300000010040000007007000300",
-    },
-    {
-      name: "晨雾高阶 04",
-      puzzle: "000900002050123400030000160908000000070000090000000205091000050007439020400007000",
-    },
-    {
-      name: "花火高阶 05",
-      puzzle: "000000907000420180000705026100904000050000040000507009920108000034059000507000000",
+      id: "hard",
+      label: "高阶",
+      hints: 2,
+      maxMistakes: 3,
+      levels: [
+        "005100000002609030300074800800003700600000000040000080000000500720000638004390700",
+        "530008000070000040100040000850700423000050090013900000061007000200000005000200100",
+        "010069025030000900000720000805000000090000430000000058200003070000001004160800200",
+        "005002400400080030300000000000000706690000200003050000008000000009015630004300702",
+        "004670010000090048008002000000700020006000091710000000000030200007409600340000000",
+      ],
     },
   ];
 
@@ -32,38 +51,46 @@
   const timerEl = document.querySelector("#timer");
   const mistakesEl = document.querySelector("#mistakes");
   const bestTimeEl = document.querySelector("#bestTime");
+  const levelLabelEl = document.querySelector("#levelLabel");
   const puzzleNameEl = document.querySelector("#puzzleName");
   const statusEl = document.querySelector("#status");
+  const difficultyPicker = document.querySelector("#difficultyPicker");
+  const levelPicker = document.querySelector("#levelPicker");
   const noteButton = document.querySelector("#noteButton");
   const eraseButton = document.querySelector("#eraseButton");
   const hintButton = document.querySelector("#hintButton");
   const hintCountEl = document.querySelector("#hintCount");
   const checkButton = document.querySelector("#checkButton");
-  const newGameTop = document.querySelector("#newGameTop");
+  const restartTop = document.querySelector("#restartTop");
+  const redoButton = document.querySelector("#redoButton");
   const dialog = document.querySelector("#dialog");
   const dialogKicker = document.querySelector("#dialogKicker");
   const dialogTitle = document.querySelector("#dialogTitle");
   const dialogText = document.querySelector("#dialogText");
   const dialogButton = document.querySelector("#dialogButton");
   const numberButtons = Array.from(document.querySelectorAll("[data-number]"));
-
   const cells = [];
+
   const state = {
+    difficulty: "normal",
+    levelIndex: 0,
     puzzle: [],
     solution: [],
     values: [],
     notes: [],
     selected: 0,
     mistakes: 0,
-    hints: START_HINTS,
+    hints: 3,
+    maxMistakes: 3,
     noteMode: false,
+    elapsedBase: 0,
     startedAt: Date.now(),
     elapsed: 0,
     solved: false,
     locked: false,
     lastHint: -1,
     checking: false,
-    puzzleName: "",
+    dialogAction: "restart",
   };
 
   function buildBoard() {
@@ -86,36 +113,214 @@
     boardEl.appendChild(fragment);
   }
 
-  function newGame() {
-    const base = PUZZLES[Math.floor(Math.random() * PUZZLES.length)];
-    const solved = solvePuzzle(toNumbers(base.puzzle));
-    const transformed = transformPuzzle(toNumbers(base.puzzle), solved);
+  function buildLevelPicker() {
+    levelPicker.replaceChildren();
+    currentConfig().levels.forEach((_, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.level = String(index);
+      button.textContent = `${index + 1}`;
+      button.title = `第${CHINESE_NUMBERS[index]}关`;
+      button.addEventListener("click", () => chooseLevel(index));
+      levelPicker.appendChild(button);
+    });
+  }
 
-    state.puzzle = transformed.puzzle;
-    state.solution = transformed.solution;
-    state.values = transformed.puzzle.slice();
-    state.notes = Array.from({ length: 81 }, () => new Set());
+  function boot() {
+    buildBoard();
+    bindControls();
+
+    const progress = readProgress();
+    const saves = readSaves();
+    const lastKey = progress.lastKey;
+    const lastSave = lastKey ? saves[lastKey] : null;
+
+    if (lastSave && restoreSavedGame(lastSave)) {
+      setStatus("已继续上次进度。");
+    } else {
+      const fallback = parseSaveKey(lastKey) || { difficulty: "normal", levelIndex: 0 };
+      loadLevel(fallback.difficulty, fallback.levelIndex, { preferSave: true, silent: true });
+    }
+
+    window.setInterval(updateTimer, 1000);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") saveCurrentGame();
+    });
+    window.addEventListener("beforeunload", saveCurrentGame);
+  }
+
+  function bindControls() {
+    Array.from(difficultyPicker.querySelectorAll("[data-difficulty]")).forEach((button) => {
+      button.addEventListener("click", () => chooseDifficulty(button.dataset.difficulty));
+    });
+
+    numberButtons.forEach((button) => {
+      button.addEventListener("click", () => placeNumber(Number(button.dataset.number)));
+    });
+
+    noteButton.addEventListener("click", toggleNoteMode);
+    eraseButton.addEventListener("click", eraseSelected);
+    hintButton.addEventListener("click", useHint);
+    checkButton.addEventListener("click", checkBoard);
+    restartTop.addEventListener("click", restartLevel);
+    redoButton.addEventListener("click", restartLevel);
+    dialogButton.addEventListener("click", handleDialogAction);
+    document.addEventListener("keydown", handleKeydown);
+  }
+
+  function chooseDifficulty(difficulty) {
+    if (!findConfig(difficulty) || difficulty === state.difficulty) return;
+
+    saveCurrentGame();
+    const progress = readProgress();
+    const lastByDifficulty = progress.lastByDifficulty[difficulty];
+    const levelIndex = clampLevel(difficulty, Number.isInteger(lastByDifficulty) ? lastByDifficulty : progress.unlocked[difficulty]);
+    loadLevel(difficulty, levelIndex, { preferSave: true });
+  }
+
+  function chooseLevel(levelIndex) {
+    const progress = readProgress();
+    const unlocked = progress.unlocked[state.difficulty] || 0;
+    if (levelIndex > unlocked) {
+      setStatus("先完成前面的关卡。");
+      return;
+    }
+    if (levelIndex === state.levelIndex) return;
+
+    saveCurrentGame();
+    loadLevel(state.difficulty, levelIndex, { preferSave: true });
+  }
+
+  function loadLevel(difficulty, levelIndex, options = {}) {
+    const safeDifficulty = findConfig(difficulty) ? difficulty : "normal";
+    const safeLevel = clampLevel(safeDifficulty, levelIndex);
+    const key = saveKey(safeDifficulty, safeLevel);
+    const save = readSaves()[key];
+
+    if (options.preferSave && save && restoreSavedGame(save)) {
+      setStatus("已继续这一关的进度。");
+      return;
+    }
+
+    startFreshLevel(safeDifficulty, safeLevel);
+    if (!options.silent) {
+      setStatus(`已进入${levelTitle(safeLevel)}。`);
+    }
+  }
+
+  function startFreshLevel(difficulty, levelIndex) {
+    const config = findConfig(difficulty);
+    const puzzle = toNumbers(config.levels[levelIndex]);
+    const solution = solvePuzzle(puzzle);
+
+    state.difficulty = difficulty;
+    state.levelIndex = levelIndex;
+    state.puzzle = puzzle;
+    state.solution = solution;
+    state.values = puzzle.slice();
+    state.notes = emptyNotes();
     state.selected = state.values.findIndex((value) => value === 0);
     state.mistakes = 0;
-    state.hints = START_HINTS;
+    state.hints = config.hints;
+    state.maxMistakes = config.maxMistakes;
     state.noteMode = false;
+    state.elapsedBase = 0;
     state.startedAt = Date.now();
     state.elapsed = 0;
     state.solved = false;
     state.locked = false;
     state.lastHint = -1;
     state.checking = false;
-    state.puzzleName = base.name;
+    state.dialogAction = "restart";
 
     dialog.hidden = true;
     noteButton.setAttribute("aria-pressed", "false");
-    puzzleNameEl.textContent = `${base.name} · ${countGivens(state.puzzle)} 个已知数`;
-    setStatus("选一个空格开始。");
-    updateTimer();
+    rememberLastLevel();
     render();
+    saveCurrentGame();
+  }
+
+  function restartLevel() {
+    clearSavedGame(state.difficulty, state.levelIndex);
+    startFreshLevel(state.difficulty, state.levelIndex);
+    setStatus("本关已重做。");
+  }
+
+  function restoreSavedGame(save) {
+    if (!save || !findConfig(save.difficulty)) return false;
+    const config = findConfig(save.difficulty);
+    const levelIndex = clampLevel(save.difficulty, save.levelIndex);
+    if (!Array.isArray(save.values) || save.values.length !== 81) return false;
+
+    state.difficulty = save.difficulty;
+    state.levelIndex = levelIndex;
+    state.puzzle = toNumbers(config.levels[levelIndex]);
+    state.solution = Array.isArray(save.solution) && save.solution.length === 81 ? save.solution : solvePuzzle(state.puzzle);
+    state.values = save.values.slice(0, 81);
+    state.notes = Array.isArray(save.notes) ? save.notes.map((note) => new Set(note)) : emptyNotes();
+    while (state.notes.length < 81) state.notes.push(new Set());
+    state.selected = Number.isInteger(save.selected) ? save.selected : state.values.findIndex((value) => value === 0);
+    state.mistakes = Number.isInteger(save.mistakes) ? save.mistakes : 0;
+    state.hints = Number.isInteger(save.hints) ? save.hints : config.hints;
+    state.maxMistakes = config.maxMistakes;
+    state.noteMode = Boolean(save.noteMode);
+    state.elapsedBase = Number.isInteger(save.elapsed) ? save.elapsed : 0;
+    state.startedAt = Date.now();
+    state.elapsed = state.elapsedBase;
+    state.solved = false;
+    state.locked = false;
+    state.lastHint = -1;
+    state.checking = false;
+    state.dialogAction = "restart";
+
+    dialog.hidden = true;
+    noteButton.setAttribute("aria-pressed", state.noteMode ? "true" : "false");
+    rememberLastLevel();
+    render();
+    return true;
   }
 
   function render() {
+    renderHeader();
+    renderPickers();
+    renderBoard();
+    renderNumberPad();
+    renderTools();
+  }
+
+  function renderHeader() {
+    const config = currentConfig();
+    puzzleNameEl.textContent = `${config.label} · ${levelTitle(state.levelIndex)}`;
+    levelLabelEl.textContent = `${state.levelIndex + 1}/${config.levels.length}`;
+    mistakesEl.textContent = `${state.mistakes}/${state.maxMistakes}`;
+    hintCountEl.textContent = `提示 ${state.hints}`;
+    bestTimeEl.textContent = bestTimeLabel();
+    updateTimer();
+  }
+
+  function renderPickers() {
+    Array.from(difficultyPicker.querySelectorAll("[data-difficulty]")).forEach((button) => {
+      const active = button.dataset.difficulty === state.difficulty;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+    });
+
+    const currentButtons = Array.from(levelPicker.querySelectorAll("[data-level]"));
+    if (currentButtons.length !== currentConfig().levels.length) buildLevelPicker();
+
+    const progress = readProgress();
+    Array.from(levelPicker.querySelectorAll("[data-level]")).forEach((button) => {
+      const levelIndex = Number(button.dataset.level);
+      const locked = levelIndex > (progress.unlocked[state.difficulty] || 0);
+      const active = levelIndex === state.levelIndex;
+      button.disabled = locked;
+      button.classList.toggle("is-active", active);
+      button.textContent = locked ? "锁" : String(levelIndex + 1);
+      button.setAttribute("aria-current", active ? "true" : "false");
+    });
+  }
+
+  function renderBoard() {
     const selectedValue = state.values[state.selected] || 0;
 
     cells.forEach((cell, index) => {
@@ -125,9 +330,9 @@
       const col = index % 9;
       const selectedRow = Math.floor(state.selected / 9);
       const selectedCol = state.selected % 9;
-      const selectedBox = boxIndex(state.selected);
       const related =
-        index !== state.selected && (row === selectedRow || col === selectedCol || boxIndex(index) === selectedBox);
+        index !== state.selected &&
+        (row === selectedRow || col === selectedCol || boxIndex(index) === boxIndex(state.selected));
       const isError = value !== 0 && value !== state.solution[index] && !fixed;
       const same = selectedValue !== 0 && value === selectedValue;
 
@@ -153,18 +358,6 @@
         cell.setAttribute("aria-label", `${cellLabel(index)}，空格`);
       }
     });
-
-    numberButtons.forEach((button) => {
-      const number = Number(button.dataset.number);
-      button.classList.toggle("is-active", selectedValue === number);
-      button.disabled = state.locked || countPlaced(number) >= 9;
-    });
-
-    mistakesEl.textContent = `${state.mistakes}/${MAX_MISTAKES}`;
-    hintCountEl.textContent = `提示 ${state.hints}`;
-    hintButton.disabled = state.locked || state.hints <= 0;
-    const bestTime = readBestTime();
-    bestTimeEl.textContent = bestTime ? formatTime(bestTime) : "--:--";
   }
 
   function renderNotes(notes) {
@@ -180,11 +373,28 @@
     return notesEl;
   }
 
+  function renderNumberPad() {
+    const selectedValue = state.values[state.selected] || 0;
+    numberButtons.forEach((button) => {
+      const number = Number(button.dataset.number);
+      button.classList.toggle("is-active", selectedValue === number);
+      button.disabled = state.locked || countPlaced(number) >= 9;
+    });
+  }
+
+  function renderTools() {
+    hintButton.disabled = state.locked || state.hints <= 0;
+    eraseButton.disabled = state.locked;
+    checkButton.disabled = state.locked;
+    noteButton.disabled = state.locked;
+  }
+
   function selectCell(index) {
     if (state.locked) return;
     state.selected = index;
     state.lastHint = -1;
     render();
+    saveCurrentGame();
   }
 
   function placeNumber(number) {
@@ -199,6 +409,7 @@
     if (state.noteMode) {
       toggleNote(index, number);
       render();
+      saveCurrentGame();
       return;
     }
 
@@ -213,7 +424,7 @@
     } else {
       state.mistakes += 1;
       setStatus("这里不太对。");
-      if (state.mistakes >= MAX_MISTAKES) {
+      if (state.mistakes >= state.maxMistakes) {
         endGame(false);
       }
     }
@@ -223,6 +434,7 @@
     }
 
     render();
+    saveCurrentGame();
   }
 
   function toggleNote(index, number) {
@@ -254,6 +466,7 @@
     state.lastHint = -1;
     setStatus("已擦除。");
     render();
+    saveCurrentGame();
   }
 
   function useHint() {
@@ -261,7 +474,9 @@
 
     let index = state.selected;
     if (index < 0 || state.puzzle[index] !== 0 || state.values[index] === state.solution[index]) {
-      index = state.values.findIndex((value, cellIndex) => state.puzzle[cellIndex] === 0 && value !== state.solution[cellIndex]);
+      index = state.values.findIndex(
+        (value, cellIndex) => state.puzzle[cellIndex] === 0 && value !== state.solution[cellIndex],
+      );
     }
 
     if (index < 0) return;
@@ -279,6 +494,7 @@
     }
 
     render();
+    saveCurrentGame();
   }
 
   function checkBoard() {
@@ -302,29 +518,44 @@
     } else {
       endGame(true);
     }
+
+    saveCurrentGame();
   }
 
   function endGame(won) {
+    state.elapsedBase = currentElapsed();
+    state.startedAt = Date.now();
     state.locked = true;
     state.solved = won;
-    updateTimer();
+    clearSavedGame(state.difficulty, state.levelIndex);
 
     if (won) {
-      const best = readBestTime();
-      if (!best || state.elapsed < best) {
-        localStorage.setItem(STORAGE_KEY, String(state.elapsed));
-      }
+      unlockNextLevel();
+      saveBestTime();
+      const hasNext = state.levelIndex < currentConfig().levels.length - 1;
       dialogKicker.textContent = "完成";
-      dialogTitle.textContent = "漂亮，解开了！";
-      dialogText.textContent = `本局用时 ${formatTime(state.elapsed)}，失误 ${state.mistakes} 次。`;
+      dialogTitle.textContent = hasNext ? "漂亮，下一关开了。" : "这一档通关了。";
+      dialogText.textContent = `本关用时 ${formatTime(state.elapsedBase)}，失误 ${state.mistakes} 次。`;
+      dialogButton.textContent = hasNext ? "下一关" : "重做本关";
+      state.dialogAction = hasNext ? "next" : "restart";
     } else {
       dialogKicker.textContent = "差一点";
-      dialogTitle.textContent = "这局先缓一缓";
-      dialogText.textContent = "失误次数用完了，换一盘继续挑战。";
+      dialogTitle.textContent = "这关先重做。";
+      dialogText.textContent = "失误次数用完了，重新来一次会更顺。";
+      dialogButton.textContent = "重做本关";
+      state.dialogAction = "restart";
     }
 
     dialog.hidden = false;
     render();
+  }
+
+  function handleDialogAction() {
+    if (state.dialogAction === "next") {
+      loadLevel(state.difficulty, state.levelIndex + 1, { preferSave: true });
+    } else {
+      restartLevel();
+    }
   }
 
   function moveToNextEmpty(fromIndex) {
@@ -353,8 +584,8 @@
   }
 
   function handleKeydown(event) {
-    if (dialog.hidden === false && event.key === "Enter") {
-      newGame();
+    if (!dialog.hidden && event.key === "Enter") {
+      handleDialogAction();
       return;
     }
 
@@ -391,9 +622,158 @@
   }
 
   function toggleNoteMode() {
+    if (state.locked) return;
     state.noteMode = !state.noteMode;
     noteButton.setAttribute("aria-pressed", state.noteMode ? "true" : "false");
     setStatus(state.noteMode ? "笔记模式已开启。" : "笔记模式已关闭。");
+    saveCurrentGame();
+  }
+
+  function saveCurrentGame() {
+    if (!state.puzzle.length || state.locked) return;
+    updateElapsedOnly();
+
+    const saves = readSaves();
+    saves[saveKey(state.difficulty, state.levelIndex)] = {
+      difficulty: state.difficulty,
+      levelIndex: state.levelIndex,
+      solution: state.solution,
+      values: state.values,
+      notes: state.notes.map((note) => Array.from(note)),
+      selected: state.selected,
+      mistakes: state.mistakes,
+      hints: state.hints,
+      noteMode: state.noteMode,
+      elapsed: state.elapsed,
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(saves));
+    rememberLastLevel();
+  }
+
+  function clearSavedGame(difficulty, levelIndex) {
+    const saves = readSaves();
+    delete saves[saveKey(difficulty, levelIndex)];
+    localStorage.setItem(SAVE_KEY, JSON.stringify(saves));
+  }
+
+  function rememberLastLevel() {
+    const progress = readProgress();
+    progress.lastKey = saveKey(state.difficulty, state.levelIndex);
+    progress.lastByDifficulty[state.difficulty] = state.levelIndex;
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+  }
+
+  function unlockNextLevel() {
+    const progress = readProgress();
+    const next = Math.min(state.levelIndex + 1, currentConfig().levels.length - 1);
+    progress.unlocked[state.difficulty] = Math.max(progress.unlocked[state.difficulty] || 0, next);
+    progress.lastByDifficulty[state.difficulty] = next;
+    progress.lastKey = saveKey(state.difficulty, next);
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+  }
+
+  function saveBestTime() {
+    const progress = readProgress();
+    const key = bestKey(state.difficulty, state.levelIndex);
+    const oldBest = progress.best[key];
+    if (!oldBest || state.elapsedBase < oldBest) {
+      progress.best[key] = state.elapsedBase;
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    }
+  }
+
+  function readProgress() {
+    const fallback = {
+      unlocked: { easy: 0, normal: 0, hard: 0 },
+      best: {},
+      lastKey: "normal-0",
+      lastByDifficulty: { easy: 0, normal: 0, hard: 0 },
+    };
+
+    try {
+      const parsed = JSON.parse(localStorage.getItem(PROGRESS_KEY) || "{}");
+      return {
+        unlocked: { ...fallback.unlocked, ...(parsed.unlocked || {}) },
+        best: { ...fallback.best, ...(parsed.best || {}) },
+        lastKey: typeof parsed.lastKey === "string" ? parsed.lastKey : fallback.lastKey,
+        lastByDifficulty: { ...fallback.lastByDifficulty, ...(parsed.lastByDifficulty || {}) },
+      };
+    } catch {
+      return fallback;
+    }
+  }
+
+  function readSaves() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(SAVE_KEY) || "{}");
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function currentConfig() {
+    return findConfig(state.difficulty) || DIFFICULTIES[1];
+  }
+
+  function findConfig(difficulty) {
+    return DIFFICULTIES.find((item) => item.id === difficulty);
+  }
+
+  function levelTitle(index) {
+    return `第${CHINESE_NUMBERS[index] || index + 1}关`;
+  }
+
+  function bestTimeLabel() {
+    const best = readProgress().best[bestKey(state.difficulty, state.levelIndex)];
+    return best ? formatTime(best) : "--:--";
+  }
+
+  function saveKey(difficulty, levelIndex) {
+    return `${difficulty}-${levelIndex}`;
+  }
+
+  function bestKey(difficulty, levelIndex) {
+    return `${difficulty}:${levelIndex}`;
+  }
+
+  function parseSaveKey(key) {
+    if (typeof key !== "string") return null;
+    const [difficulty, level] = key.split("-");
+    if (!findConfig(difficulty)) return null;
+    return { difficulty, levelIndex: clampLevel(difficulty, Number(level)) };
+  }
+
+  function clampLevel(difficulty, levelIndex) {
+    const config = findConfig(difficulty) || DIFFICULTIES[1];
+    if (!Number.isInteger(levelIndex)) return 0;
+    return Math.max(0, Math.min(config.levels.length - 1, levelIndex));
+  }
+
+  function updateTimer() {
+    updateElapsedOnly();
+    timerEl.textContent = formatTime(state.elapsed);
+  }
+
+  function updateElapsedOnly() {
+    if (!state.locked) {
+      state.elapsed = currentElapsed();
+    }
+  }
+
+  function currentElapsed() {
+    if (state.locked) return state.elapsedBase;
+    return state.elapsedBase + Math.floor((Date.now() - state.startedAt) / 1000);
+  }
+
+  function formatTime(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+
+  function emptyNotes() {
+    return Array.from({ length: 81 }, () => new Set());
   }
 
   function isSolved() {
@@ -402,10 +782,6 @@
 
   function countPlaced(number) {
     return state.values.filter((value, index) => value === number && value === state.solution[index]).length;
-  }
-
-  function countGivens(puzzle) {
-    return puzzle.filter(Boolean).length;
   }
 
   function boxIndex(index) {
@@ -424,64 +800,8 @@
     statusEl.textContent = message;
   }
 
-  function updateTimer() {
-    if (!state.locked) {
-      state.elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
-    }
-
-    timerEl.textContent = formatTime(state.elapsed);
-  }
-
-  function formatTime(totalSeconds) {
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-
-  function readBestTime() {
-    return Number(localStorage.getItem(STORAGE_KEY)) || 0;
-  }
-
   function toNumbers(puzzle) {
     return puzzle.split("").map((char) => Number(char));
-  }
-
-  function transformPuzzle(puzzle, solution) {
-    const digitMap = shuffled([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    const rowBands = shuffled([0, 1, 2]);
-    const colStacks = shuffled([0, 1, 2]);
-    const rowsInBand = [shuffled([0, 1, 2]), shuffled([0, 1, 2]), shuffled([0, 1, 2])];
-    const colsInStack = [shuffled([0, 1, 2]), shuffled([0, 1, 2]), shuffled([0, 1, 2])];
-    const transpose = Math.random() > 0.5;
-
-    const mapIndex = (index) => {
-      const row = Math.floor(index / 9);
-      const col = index % 9;
-      const newRow = rowBands[Math.floor(row / 3)] * 3 + rowsInBand[Math.floor(row / 3)][row % 3];
-      const newCol = colStacks[Math.floor(col / 3)] * 3 + colsInStack[Math.floor(col / 3)][col % 3];
-      return transpose ? newCol * 9 + newRow : newRow * 9 + newCol;
-    };
-
-    const mapValue = (value) => (value === 0 ? 0 : digitMap[value - 1]);
-    const nextPuzzle = Array(81).fill(0);
-    const nextSolution = Array(81).fill(0);
-
-    for (let index = 0; index < 81; index += 1) {
-      const nextIndex = mapIndex(index);
-      nextPuzzle[nextIndex] = mapValue(puzzle[index]);
-      nextSolution[nextIndex] = mapValue(solution[index]);
-    }
-
-    return { puzzle: nextPuzzle, solution: nextSolution };
-  }
-
-  function shuffled(items) {
-    const copy = items.slice();
-    for (let index = copy.length - 1; index > 0; index -= 1) {
-      const swapIndex = Math.floor(Math.random() * (index + 1));
-      [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
-    }
-    return copy;
   }
 
   function solvePuzzle(grid) {
@@ -545,19 +865,5 @@
     return candidates;
   }
 
-  numberButtons.forEach((button) => {
-    button.addEventListener("click", () => placeNumber(Number(button.dataset.number)));
-  });
-
-  noteButton.addEventListener("click", toggleNoteMode);
-  eraseButton.addEventListener("click", eraseSelected);
-  hintButton.addEventListener("click", useHint);
-  checkButton.addEventListener("click", checkBoard);
-  newGameTop.addEventListener("click", newGame);
-  dialogButton.addEventListener("click", newGame);
-  document.addEventListener("keydown", handleKeydown);
-  window.setInterval(updateTimer, 1000);
-
-  buildBoard();
-  newGame();
+  boot();
 })();

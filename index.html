@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#fff7fb" />
+    <meta name="theme-color" content="#ffffff" />
     <title>爱心数独</title>
-    <meta name="description" content="手机可玩的高阶数独小游戏。" />
-    <link rel="stylesheet" href="styles.css?v=white1" />
-    <script src="app.js" defer></script>
+    <meta name="description" content="手机可玩的闯关数独小游戏。" />
+    <link rel="stylesheet" href="styles.css?v=levels1" />
+    <script src="app.js?v=levels1" defer></script>
   </head>
   <body>
     <main class="app-shell" aria-label="爱心数独">
@@ -18,18 +18,31 @@
           <span class="brand-mark" aria-hidden="true">♡</span>
           <div>
             <h1>爱心数独</h1>
-            <p id="puzzleName">高阶挑战</p>
+            <p id="puzzleName">第一关</p>
           </div>
         </div>
-        <button class="icon-button" id="newGameTop" type="button" aria-label="新局" title="新局">
+        <button class="icon-button" id="restartTop" type="button" aria-label="重做本关" title="重做本关">
           ↻
         </button>
       </header>
+
+      <section class="selectors" aria-label="关卡设置">
+        <div id="difficultyPicker" class="difficulty-picker" aria-label="选择难度">
+          <button type="button" data-difficulty="easy">轻松</button>
+          <button type="button" data-difficulty="normal">进阶</button>
+          <button type="button" data-difficulty="hard">高阶</button>
+        </div>
+        <div id="levelPicker" class="level-picker" aria-label="选择关卡"></div>
+      </section>
 
       <section class="stats" aria-label="当前进度">
         <div>
           <span>时间</span>
           <strong id="timer">00:00</strong>
+        </div>
+        <div>
+          <span>关卡</span>
+          <strong id="levelLabel">1/5</strong>
         </div>
         <div>
           <span>失误</span>
@@ -74,6 +87,10 @@
           <span aria-hidden="true">✓</span>
           <small>检查</small>
         </button>
+        <button id="redoButton" class="tool-button" type="button" title="重做本关">
+          <span aria-hidden="true">↻</span>
+          <small>重做</small>
+        </button>
       </section>
 
       <p id="status" class="status" role="status" aria-live="polite">选一个空格开始。</p>
@@ -83,8 +100,8 @@
       <div class="dialog-panel" role="dialog" aria-modal="true" aria-labelledby="dialogTitle">
         <p class="dialog-kicker" id="dialogKicker">完成</p>
         <h2 id="dialogTitle">漂亮，解开了！</h2>
-        <p id="dialogText">本局用时 00:00。</p>
-        <button id="dialogButton" class="primary-button" type="button">再来一局</button>
+        <p id="dialogText">本关用时 00:00。</p>
+        <button id="dialogButton" class="primary-button" type="button">下一关</button>
       </div>
     </div>
   </body>

@@ -2,19 +2,13 @@
   color-scheme: light;
   --ink: #263247;
   --muted: #778093;
-  --paper: #fffdf9;
-  --rose: #fff0f5;
   --berry: #d94f7b;
   --berry-dark: #9c3154;
-  --mint: #d9f5ea;
-  --aqua: #6bb7c9;
-  --sun: #ffd66d;
-  --violet: #8d7ae8;
   --line: rgba(38, 50, 71, 0.24);
   --line-strong: #263247;
-  --good: #2f9c72;
+  --good: #16634d;
   --bad: #d64545;
-  --shadow: 0 20px 48px rgba(62, 42, 78, 0.16);
+  --shadow: 0 20px 48px rgba(38, 50, 71, 0.12);
   --radius: 8px;
   font-family:
     "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, -apple-system, BlinkMacSystemFont,
@@ -43,6 +37,7 @@ button {
   appearance: none;
   border: 0;
   border-radius: var(--radius);
+  background: #ffffff;
   color: inherit;
   cursor: pointer;
   font: inherit;
@@ -54,6 +49,10 @@ button {
 button:focus-visible {
   outline: 3px solid rgba(217, 79, 123, 0.36);
   outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: default;
 }
 
 h1,
@@ -69,7 +68,7 @@ p {
   margin: 0 auto;
   padding: calc(12px + env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
 }
 
 .topbar {
@@ -77,7 +76,7 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 54px;
+  min-height: 50px;
 }
 
 .brand {
@@ -87,25 +86,33 @@ p {
   gap: 10px;
 }
 
+.brand-mark,
+.icon-button,
+.number-pad button,
+.tool-button,
+.primary-button,
+.difficulty-picker button,
+.level-picker button {
+  border: 2px solid var(--line-strong);
+  background: #ffffff;
+  box-shadow: 4px 4px 0 rgba(38, 50, 71, 0.18);
+  font-weight: 900;
+}
+
 .brand-mark {
   display: grid;
   width: 42px;
   height: 42px;
   flex: 0 0 auto;
   place-items: center;
-  border: 2px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: #ffffff;
-  box-shadow: 4px 4px 0 rgba(38, 50, 71, 0.18);
   color: var(--berry-dark);
   font-size: 1.35rem;
-  font-weight: 900;
 }
 
 .brand h1 {
   overflow: hidden;
   color: var(--ink);
-  font-size: 1.35rem;
+  font-size: 1.28rem;
   line-height: 1.08;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -114,7 +121,7 @@ p {
 .brand p {
   overflow: hidden;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 800;
   line-height: 1.3;
   text-overflow: ellipsis;
@@ -127,17 +134,53 @@ p {
   height: 42px;
   flex: 0 0 auto;
   place-items: center;
-  border: 2px solid var(--line-strong);
-  background: #ffffff;
-  box-shadow: 4px 4px 0 rgba(38, 50, 71, 0.18);
   font-size: 1.28rem;
-  font-weight: 900;
+}
+
+.selectors {
+  display: grid;
+  gap: 8px;
+}
+
+.difficulty-picker,
+.level-picker {
+  display: grid;
+  gap: 7px;
+}
+
+.difficulty-picker {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.level-picker {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.difficulty-picker button,
+.level-picker button {
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.difficulty-picker button.is-active,
+.level-picker button.is-active {
+  color: var(--berry-dark);
+  box-shadow:
+    inset 0 0 0 2px var(--berry),
+    4px 4px 0 rgba(38, 50, 71, 0.18);
+}
+
+.level-picker button:disabled {
+  opacity: 0.38;
 }
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
 }
 
 .stats div {
@@ -145,8 +188,8 @@ p {
   border: 1px solid rgba(38, 50, 71, 0.13);
   border-radius: var(--radius);
   background: #ffffff;
-  box-shadow: 0 10px 22px rgba(62, 42, 78, 0.08);
-  padding: 8px 9px;
+  box-shadow: 0 10px 22px rgba(38, 50, 71, 0.07);
+  padding: 7px 7px;
 }
 
 .stats span,
@@ -159,14 +202,14 @@ p {
 
 .stats span {
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 800;
 }
 
 .stats strong {
   margin-top: 2px;
   color: var(--ink);
-  font-size: 1rem;
+  font-size: 0.92rem;
   line-height: 1.15;
 }
 
@@ -174,7 +217,7 @@ p {
   display: grid;
   width: 100%;
   max-width: 560px;
-  margin: 2px auto 0;
+  margin: 1px auto 0;
   place-items: center;
 }
 
@@ -201,7 +244,7 @@ p {
   border-bottom: 1px solid var(--line);
   background: #ffffff;
   color: var(--berry-dark);
-  font-size: 1.55rem;
+  font-size: 1.45rem;
   font-weight: 900;
   line-height: 1;
 }
@@ -230,12 +273,13 @@ p {
   background: #ffffff;
 }
 
-.cell.is-related {
+.cell.is-related,
+.cell.is-same,
+.cell.is-error {
   background: #ffffff;
 }
 
 .cell.is-same {
-  background: #ffffff;
   color: var(--berry);
 }
 
@@ -246,7 +290,6 @@ p {
 }
 
 .cell.is-error {
-  background: #ffffff;
   color: var(--bad);
 }
 
@@ -261,7 +304,7 @@ p {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(3, minmax(0, 1fr));
   color: rgba(38, 50, 71, 0.58);
-  font-size: 0.56rem;
+  font-size: 0.54rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -279,25 +322,18 @@ p {
   gap: 6px;
 }
 
-.number-pad button,
-.tool-button,
-.primary-button {
-  min-height: 44px;
-  border: 2px solid var(--line-strong);
-  background: #ffffff;
-  box-shadow: 4px 4px 0 rgba(38, 50, 71, 0.18);
-  font-weight: 900;
-}
-
 .number-pad button {
+  min-height: 42px;
   padding: 0;
   color: var(--berry-dark);
-  font-size: 1.22rem;
+  font-size: 1.13rem;
 }
 
 .number-pad button.is-active {
-  background: #ffffff;
   color: var(--berry);
+  box-shadow:
+    inset 0 0 0 2px var(--berry),
+    4px 4px 0 rgba(38, 50, 71, 0.18);
 }
 
 .number-pad button:disabled {
@@ -306,34 +342,36 @@ p {
 
 .tools {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
 }
 
 .tool-button {
   display: grid;
   min-width: 0;
-  grid-template-columns: auto minmax(0, auto);
+  min-height: 44px;
+  grid-template-columns: 1fr;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 0 6px;
-  background: #ffffff;
+  gap: 2px;
+  padding: 2px 4px;
 }
 
 .tool-button[aria-pressed="true"] {
-  background: #ffffff;
-  color: #16634d;
+  color: var(--good);
+  box-shadow:
+    inset 0 0 0 2px var(--good),
+    4px 4px 0 rgba(38, 50, 71, 0.18);
 }
 
 .tool-button span {
-  font-size: 1.06rem;
+  font-size: 1rem;
   line-height: 1;
 }
 
 .tool-button small {
   overflow: hidden;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 900;
   line-height: 1;
   text-overflow: ellipsis;
@@ -343,7 +381,7 @@ p {
 .status {
   min-height: 22px;
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
   text-align: center;
 }
@@ -380,7 +418,7 @@ p {
 
 .dialog-panel h2 {
   margin-top: 4px;
-  font-size: 1.45rem;
+  font-size: 1.42rem;
   line-height: 1.18;
 }
 
@@ -394,8 +432,8 @@ p {
 
 .primary-button {
   width: 100%;
+  min-height: 44px;
   margin-top: 18px;
-  background: #ffffff;
   color: var(--berry-dark);
   font-size: 1rem;
 }
@@ -422,7 +460,7 @@ p {
   }
 
   .brand h1 {
-    font-size: 1.18rem;
+    font-size: 1.16rem;
   }
 
   .brand-mark,
@@ -431,36 +469,45 @@ p {
     height: 38px;
   }
 
+  .difficulty-picker button,
+  .level-picker button {
+    min-height: 34px;
+    font-size: 0.76rem;
+  }
+
   .stats div {
-    padding: 7px;
+    padding: 6px;
+  }
+
+  .stats span {
+    font-size: 0.62rem;
+  }
+
+  .stats strong {
+    font-size: 0.84rem;
   }
 
   .cell {
-    font-size: 1.28rem;
+    font-size: 1.22rem;
   }
 
   .notes {
-    font-size: 0.5rem;
-  }
-
-  .tool-button {
-    grid-template-columns: 1fr;
-    gap: 2px;
-    min-height: 42px;
-  }
-
-  .tool-button small {
-    font-size: 0.68rem;
-  }
-}
-
-@media (min-height: 740px) {
-  .app-shell {
-    gap: 12px;
+    font-size: 0.48rem;
   }
 
   .number-pad button,
   .tool-button {
-    min-height: 48px;
+    min-height: 40px;
+  }
+}
+
+@media (min-height: 760px) {
+  .app-shell {
+    gap: 10px;
+  }
+
+  .number-pad button,
+  .tool-button {
+    min-height: 46px;
   }
 }
