@@ -34,9 +34,7 @@ body {
 body {
   min-height: 100svh;
   color: var(--ink);
-  background:
-    url("assets/bloom.svg") top right / min(72vw, 420px) auto no-repeat,
-    linear-gradient(135deg, #fff7fb 0%, #f1fbff 42%, #fff9e7 100%);
+  background: #ffffff;
   overflow-x: hidden;
   -webkit-tap-highlight-color: transparent;
 }
@@ -97,7 +95,7 @@ p {
   place-items: center;
   border: 2px solid var(--line-strong);
   border-radius: var(--radius);
-  background: linear-gradient(135deg, var(--sun), #fff4b5 48%, var(--rose));
+  background: #ffffff;
   box-shadow: 4px 4px 0 rgba(38, 50, 71, 0.18);
   color: var(--berry-dark);
   font-size: 1.35rem;
@@ -130,7 +128,7 @@ p {
   flex: 0 0 auto;
   place-items: center;
   border: 2px solid var(--line-strong);
-  background: var(--paper);
+  background: #ffffff;
   box-shadow: 4px 4px 0 rgba(38, 50, 71, 0.18);
   font-size: 1.28rem;
   font-weight: 900;
@@ -146,7 +144,7 @@ p {
   min-width: 0;
   border: 1px solid rgba(38, 50, 71, 0.13);
   border-radius: var(--radius);
-  background: rgba(255, 253, 249, 0.82);
+  background: #ffffff;
   box-shadow: 0 10px 22px rgba(62, 42, 78, 0.08);
   padding: 8px 9px;
 }
@@ -189,7 +187,7 @@ p {
   grid-template-rows: repeat(9, minmax(0, 1fr));
   border: 3px solid var(--line-strong);
   border-radius: var(--radius);
-  background: var(--line-strong);
+  background: #ffffff;
   box-shadow: var(--shadow);
 }
 
@@ -201,7 +199,7 @@ p {
   place-items: center;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  background: rgba(255, 253, 249, 0.96);
+  background: #ffffff;
   color: var(--berry-dark);
   font-size: 1.55rem;
   font-weight: 900;
@@ -229,15 +227,15 @@ p {
 
 .cell.is-fixed {
   color: var(--ink);
-  background: #fff8df;
+  background: #ffffff;
 }
 
 .cell.is-related {
-  background: #f1fbff;
+  background: #ffffff;
 }
 
 .cell.is-same {
-  background: #fff0f5;
+  background: #ffffff;
   color: var(--berry);
 }
 
@@ -248,7 +246,7 @@ p {
 }
 
 .cell.is-error {
-  background: #ffe5e5;
+  background: #ffffff;
   color: var(--bad);
 }
 
@@ -286,7 +284,7 @@ p {
 .primary-button {
   min-height: 44px;
   border: 2px solid var(--line-strong);
-  background: var(--paper);
+  background: #ffffff;
   box-shadow: 4px 4px 0 rgba(38, 50, 71, 0.18);
   font-weight: 900;
 }
@@ -298,8 +296,8 @@ p {
 }
 
 .number-pad button.is-active {
-  background: var(--berry);
-  color: #ffffff;
+  background: #ffffff;
+  color: var(--berry);
 }
 
 .number-pad button:disabled {
@@ -320,11 +318,11 @@ p {
   justify-content: center;
   gap: 5px;
   padding: 0 6px;
-  background: rgba(255, 253, 249, 0.9);
+  background: #ffffff;
 }
 
 .tool-button[aria-pressed="true"] {
-  background: var(--mint);
+  background: #ffffff;
   color: #16634d;
 }
 
@@ -356,7 +354,7 @@ p {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(38, 50, 71, 0.34);
+  background: #ffffff;
   backdrop-filter: blur(10px);
 }
 
@@ -368,9 +366,7 @@ p {
   width: min(100%, 360px);
   border: 2px solid var(--line-strong);
   border-radius: var(--radius);
-  background:
-    linear-gradient(180deg, rgba(255, 240, 245, 0.92), rgba(255, 253, 249, 0.98)),
-    var(--paper);
+  background: #ffffff;
   box-shadow: 8px 8px 0 rgba(38, 50, 71, 0.2);
   padding: 22px;
   text-align: center;
@@ -399,8 +395,8 @@ p {
 .primary-button {
   width: 100%;
   margin-top: 18px;
-  background: var(--berry);
-  color: #ffffff;
+  background: #ffffff;
+  color: var(--berry-dark);
   font-size: 1rem;
 }
 
