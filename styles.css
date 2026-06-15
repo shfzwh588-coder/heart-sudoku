@@ -4,6 +4,7 @@
   --muted: #778093;
   --berry: #d94f7b;
   --berry-dark: #9c3154;
+  --entry-blue: #2368c4;
   --line: rgba(38, 50, 71, 0.24);
   --line-strong: #263247;
   --good: #16634d;
@@ -105,7 +106,7 @@ p {
   height: 42px;
   flex: 0 0 auto;
   place-items: center;
-  color: var(--berry-dark);
+  color: var(--entry-blue);
   font-size: 1.35rem;
 }
 
@@ -280,7 +281,11 @@ p {
 }
 
 .cell.is-same {
-  color: var(--berry);
+  color: var(--entry-blue);
+}
+
+.cell.is-fixed.is-same {
+  color: var(--ink);
 }
 
 .cell.is-selected {
@@ -325,12 +330,12 @@ p {
 .number-pad button {
   min-height: 42px;
   padding: 0;
-  color: var(--berry-dark);
+  color: var(--entry-blue);
   font-size: 1.13rem;
 }
 
 .number-pad button.is-active {
-  color: var(--berry);
+  color: var(--entry-blue);
   box-shadow:
     inset 0 0 0 2px var(--berry),
     4px 4px 0 rgba(38, 50, 71, 0.18);
